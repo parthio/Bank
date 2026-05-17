@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Greenwood Bank • Smart Withdrawal with Popups</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', 'Inter', 'Roboto', sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0b2b26 0%, #1a4d3e 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .bank-card {
+            max-width: 600px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 2rem;
+            box-shadow: 0 30px 50px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+            backdrop-filter: blur(0px);
+            transition: transform 0.2s ease;
+        }
+
+        .bank-header {
+            background: #146b3a;
+            padding: 1.6rem 2rem;
+            color: white;
+            text-align: center;
+        }
+
+        .bank-header h1 {
+            font-size: 1.9rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .bank-header h1::before {
+            content: "🏦";
+            font-size: 2rem;
+        }
+
+        .bank-header p {
+            margin-top: 0.4rem;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .content {
+            padding: 2rem 2rem 2.2rem;
+        }
+
+        .balance-panel {
+            background: #eef5f2;
+            border-radius: 1.5rem;
+            padding: 1rem 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 12px;
+            border-left: 6px solid #146b3a;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .balance-label {
+            font-weight: 700;
+            color: #1a3f3a;
+            font-size: 1.2rem;
+        }
+
+        .balance-amount {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #0f5c38;
+            font-family: monospace;
+            letter-spacing: 1px;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            color: #1f2e2a;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 0.9rem 1rem;
+            font-size: 1rem;
+            border: 2px solid #cfdfda;
+            border-radius: 1.2rem;
+            background: white;
+            transition: all 0.2s;
+            outline: none;
+            font-weight: 500;
+        }
+
+        .input-field:focus {
+            border-color: #146b3a;
+            box-shadow: 0 0 0 3px rgba(20, 107, 58, 0.2);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin: 1.8rem 0 1.2rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 0.85rem 0;
+            border: none;
+            border-radius: 2.5rem;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+            background: #eef2f0;
+            color: #1f3d36;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .btn-primary {
+            background: #146b3a;
+            color: white;
+            box-shadow: 0 4px 10px rgba(20, 107, 58, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: #0e552e;
+            transform: translateY(-2px);
+        }
+
+        .reset-link {
+            background: none;
+            border: none;
+            color: #146b3a;
+            font-weight: 600;
+            text-decoration: underline;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+
+        hr {
+            margin: 1rem 0;
+            border: none;
+            border-top: 1px solid #cfdfda;
+        }
+
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(3px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0.2s, opacity 0.2s;
+        }
+
+        .popup-overlay.active {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .popup-card {
+            background: white;
+            max-width: 380px;
+            width: 85%;
+            border-radius: 2rem;
+            padding: 1.8rem 1.8rem 1.8rem;
+            text-align: center;
+            box-shadow: 0 30px 40px rgba(0, 0, 0, 0.3);
+            animation: popupZoom 0.25s ease-out;
+            border-top: 6px solid #146b3a;
+        }
+
+        .popup-card.error-popup {
+            border-top-color: #c23b22;
+        }
+
+        .popup-card.success-popup {
+            border-top-color: #146b3a;
+        }
+
+        .popup-icon {
+            font-size: 3.2rem;
+            margin-bottom: 0.6rem;
+        }
+
+        .popup-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            color: #1e2f2b;
+        }
+
+        .popup-message {
+            font-size: 1rem;
+            color: #2d4a43;
+            margin-bottom: 1.5rem;
+            line-height: 1.4;
+        }
+
+        .popup-btn {
+            background: #146b3a;
+            border: none;
+            padding: 0.7rem 1.8rem;
+            border-radius: 2.5rem;
+            font-weight: 600;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .popup-btn:hover {
+            background: #0e552e;
+            transform: scale(0.97);
+        }
+
+        @keyframes popupZoom {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .inline-message {
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            background: #f7f9fa;
+            padding: 0.6rem;
+            border-radius: 1rem;
+            text-align: center;
+            color: #4a5b56;
+        }
+        @media (max-width: 500px) {
+            .content {
+                padding: 1.5rem;
+            }
+            .balance-amount {
+                font-size: 1.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="bank-card" id="bankApp">
+    <div class="bank-header">
+        <h1>Greenwood Bank</h1>
+    </div>
+    
+    <div class="content">
+        <div class="balance-panel">
+            <span class="balance-label">💵 Current balance</span>
+            <span class="balance-amount" id="balanceDisplay">$0.00</span>
+        </div>
+
+        <div class="input-group">
+            <label><span>💰</span> Deposit / Set balance</label>
+            <input type="number" id="depositInput" class="input-field" placeholder="Enter amount to deposit" step="1" autocomplete="off">
+        </div>
+
+        <div class="input-group">
+            <label><span>🏧</span> Withdrawal amount</label>
+            <input type="number" id="withdrawInput" class="input-field" placeholder="Amount to withdraw" step="1" autocomplete="off">
+        </div>
+
+        <div class="action-buttons">
+            <button id="depositBtn" class="btn btn-primary">💵 Deposit / Set</button>
+            <button id="withdrawBtn" class="btn btn-primary">💸 Withdraw</button>
+        </div>
+        <div style="text-align: center; margin-top: 0.8rem;">
+            <button id="fullResetBtn" class="reset-link">🏦 Full reset (balance → zero)</button>
+        </div>
+        <div class="inline-message">
+            ⚡ Press <kbd>Enter</kbd> after typing withdrawal amount → quick withdraw!<br>
+            ✨ Popup notifications for success &amp; errors.
+        </div>
+    </div>
+</div>
+
+<div id="popupOverlay" class="popup-overlay">
+    <div class="popup-card success-popup" id="popupCard">
+                <div class="popup-icon" id="popupIcon">✅</div>
+                <div class="popup-title" id="popupTitle">Success</div>
+                <div class="popup-message" id="popupMessage">Action completed</div>
+                <button class="popup-btn" id="closePopupBtn">Got it</button>
+            </div>
+</div>
+
+<script>
+    const balanceSpan = document.getElementById('balanceDisplay');
+    const depositInput = document.getElementById('depositInput');
+    const withdrawInput = document.getElementById('withdrawInput');
+    const depositBtn = document.getElementById('depositBtn');
+    const withdrawBtn = document.getElementById('withdrawBtn');
+    const fullResetBtn = document.getElementById('fullResetBtn');
+    
+    const popupOverlay = document.getElementById('popupOverlay');
+    const popupIcon = document.getElementById('popupIcon');
+    const popupTitle = document.getElementById('popupTitle');
+    const popupMessage = document.getElementById('popupMessage');
+    const closePopupBtn = document.getElementById('closePopupBtn');
+
+    let currentBalance = 0;       
+    let isRetryMode = false;      
+
+    function updateBalanceUI() {
+        balanceSpan.innerText = `$${currentBalance.toFixed(2)}`;
+    }
+
+    function showPopup(type, title, message) {
+        const popupCard = document.getElementById('popupCard');
+        if (type === 'success') {
+            popupIcon.innerHTML = '✅✨';
+            popupTitle.innerText = title || 'Success';
+            popupCard.classList.remove('error-popup');
+            popupCard.classList.add('success-popup');
+        } else if (type === 'error') {
+            popupIcon.innerHTML = '❌⚠️';
+            popupTitle.innerText = title || 'Error';
+            popupCard.classList.remove('success-popup');
+            popupCard.classList.add('error-popup');
+        } else {
+            popupIcon.innerHTML = 'ℹ️';
+            popupTitle.innerText = title || 'Notice';
+        }
+        popupMessage.innerText = message;
+        popupOverlay.classList.add('active');
+        
+        const activeCloseBtn = document.getElementById('closePopupBtn');
+        if (activeCloseBtn) activeCloseBtn.focus();
+    }
+
+    function closePopup() {
+        popupOverlay.classList.remove('active');
+    }
+
+    popupOverlay.addEventListener('click', (e) => {
+        if (e.target === popupOverlay) closePopup();
+    });
+    closePopupBtn.addEventListener('click', closePopup);
+
+    function validateNumberInput(value, fieldName) {
+        if (value === null || value === undefined || value === "") {
+            return { valid: false, message: `${fieldName} cannot be empty.` };
+        }
+        const num = Number(value);
+        if (isNaN(num)) {
+            return { valid: false, message: `${fieldName} should be a valid number.` };
+        }
+        if (!isFinite(num)) {
+            return { valid: false, message: `${fieldName} must be a finite amount.` };
+        }
+        if (num < 0) {
+            return { valid: false, message: `${fieldName} cannot be negative.` };
+        }
+        return { valid: true, value: num };
+    }
+
+    function handleDeposit() {
+        const rawValue = depositInput.value.trim();
+        const validation = validateNumberInput(rawValue, "Deposit amount");
+        if (!validation.valid) {
+            showPopup('error', 'Invalid Deposit', validation.message);
+            depositInput.value = "";
+            depositInput.focus();
+            return;
+        }
+        let amount = validation.value;
+        currentBalance = amount;
+        updateBalanceUI();
+        showPopup('success', 'Balance Updated', `✅ Successfully deposited $${amount.toFixed(2)}.\nYour new balance is $${currentBalance.toFixed(2)}.`);
+        withdrawInput.value = "";
+        depositInput.value = "";  
+        depositInput.focus();
+    }
+
+    function executeWithdrawalFlow(requestedAmount) {
+        if (isNaN(requestedAmount) || requestedAmount === null || requestedAmount === undefined) {
+            showPopup('error', 'Invalid Amount', 'Amount should be a number.\nPlease enter numeric withdrawal amount.');
+            withdrawInput.value = "";
+            withdrawInput.focus();
+            return false;
+        }
+        if (requestedAmount < 0) {
+            showPopup('error', 'Negative Amount', 'Withdrawal amount cannot be negative. Try again.');
+            withdrawInput.value = "";
+            withdrawInput.focus();
+            return false;
+        }
+        
+        try {
+            if (requestedAmount > currentBalance) {
+                throw new Error(`Can't withdraw the amount. Entered amount is too high. (Your balance: $${currentBalance.toFixed(2)})`);
+            }
+            currentBalance = currentBalance - requestedAmount;
+            updateBalanceUI();
+            showPopup('success', 'Withdrawal Successful', `💸 Money withdrawn successfully!!\n💰 Balance left in account: $${currentBalance.toFixed(2)}`);
+            withdrawInput.value = "";
+            if (isRetryMode) {
+                isRetryMode = false;
+            }
+            return true;
+        } 
+        catch (err) {
+            showPopup('error', 'Withdrawal Failed', `⚠️ ${err.message}\n\n🔁 Starting retry: Please enter an amount not exceeding balance.`);
+            isRetryMode = true;
+            startRetryDialog();
+            return false;
+        }
+    }
+    
+    function startRetryDialog() {
+        const popupCardElem = document.getElementById('popupCard');
+        
+        popupCardElem.innerHTML = `
+            <div class="popup-icon">🔄</div>
+            <div class="popup-title">Retry Withdrawal</div>
+            <div class="popup-message" id="retryMessage">Insufficient funds. Please enter an amount ≤ $${currentBalance.toFixed(2)}</div>
+            <input type="number" id="retryAmountInput" class="input-field" style="margin-bottom: 1rem;" placeholder="Enter withdrawal amount" step="1" autocomplete="off">
+            <button id="retrySubmitBtn" class="popup-btn" style="background: #146b3a;">Confirm Withdrawal</button>
+            <button id="retryCancelBtn" class="popup-btn" style="background: #8f9e9a; margin-top: 0.5rem;">Cancel Retry</button>
+        `;
+        
+        popupOverlay.classList.add('active');
+        
+        const retryInput = document.getElementById('retryAmountInput');
+        const retrySubmit = document.getElementById('retrySubmitBtn');
+        const retryCancel = document.getElementById('retryCancelBtn');
+        const retryMsgSpan = document.getElementById('retryMessage');
+        
+        if (retryInput) retryInput.focus();
+        
+        const processRetry = () => {
+            let rawVal = retryInput ? retryInput.value.trim() : "";
+            if (rawVal === "") {
+                if (retryMsgSpan) retryMsgSpan.innerText = `❌ Amount cannot be empty. Please enter a number ≤ $${currentBalance.toFixed(2)}`;
+                if (retryInput) retryInput.value = "";
+                return;
+            }
+            let attemptAmount = Number(rawVal);
+            if (isNaN(attemptAmount)) {
+                if (retryMsgSpan) retryMsgSpan.innerText = `❌ Amount should be a number. Try again (≤ $${currentBalance.toFixed(2)})`;
+                if (retryInput) retryInput.value = "";
+                return;
+            }
+            if (attemptAmount < 0) {
+                if (retryMsgSpan) retryMsgSpan.innerText = `❌ Negative amount not allowed. Please enter positive amount.`;
+                if (retryInput) retryInput.value = "";
+                return;
+            }
+            if (attemptAmount > currentBalance) {
+                if (retryMsgSpan) retryMsgSpan.innerText = `⚠️ Still too high! Enter amount ≤ $${currentBalance.toFixed(2)}`;
+                if (retryInput) retryInput.value = "";
+                retryInput.focus();
+                return;
+            }
+            currentBalance = currentBalance - attemptAmount;
+            updateBalanceUI();
+            popupOverlay.classList.remove('active');
+            restoreOriginalPopup();
+            showPopup('success', 'Withdrawal Successful', `💸 Money withdrawn successfully!!\n💰 Balance left in account: $${currentBalance.toFixed(2)}`);
+            withdrawInput.value = "";
+            isRetryMode = false;
+        };
+        
+        const cancelRetry = () => {
+            popupOverlay.classList.remove('active');
+            restoreOriginalPopup();
+            isRetryMode = false;
+            withdrawInput.value = "";
+            showPopup('info', 'Retry Cancelled', 'Withdrawal operation cancelled. Your balance remains unchanged.');
+            setTimeout(() => closePopup(), 1800);
+        };
+        
+        const restoreOriginalPopup = () => {
+            popupCardElem.innerHTML = `
+                <div class="popup-icon" id="popupIcon">✅</div>
+                <div class="popup-title" id="popupTitle">Success</div>
+                <div class="popup-message" id="popupMessage">Action completed</div>
+                <button class="popup-btn" id="closePopupBtn">Got it</button>
+            `;
+            const newCloseBtn = document.getElementById('closePopupBtn');
+            if (newCloseBtn) {
+                newCloseBtn.addEventListener('click', closePopup);
+            }
+        };
+        
+        if (retrySubmit) retrySubmit.addEventListener('click', processRetry);
+        if (retryCancel) retryCancel.addEventListener('click', cancelRetry);
+        if (retryInput) {
+            retryInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    processRetry();
+                }
+            });
+        }
+    }
+    
+    function attemptWithdrawFromInput() {
+        if (isRetryMode) {
+            showPopup('error', 'Retry Active', 'Please complete the retry popup before starting a new withdrawal.');
+            return;
+        }
+        let rawWithdraw = withdrawInput.value.trim();
+        if (rawWithdraw === "") {
+            showPopup('error', 'Empty Amount', 'Amount should be a number.\nPlease enter withdrawal amount.');
+            withdrawInput.focus();
+            return;
+        }
+        let amount = Number(rawWithdraw);
+        if (isNaN(amount)) {
+            showPopup('error', 'Invalid Number', 'Amount should be a number.\nTry again: ');
+            withdrawInput.value = "";
+            withdrawInput.focus();
+            return;
+        }
+        if (amount < 0) {
+            showPopup('error', 'Negative Amount', 'Withdrawal amount cannot be negative.\nTry again.');
+            withdrawInput.value = "";
+            withdrawInput.focus();
+            return;
+        }
+        executeWithdrawalFlow(amount);
+    }
+    
+    function fullReset() {
+        if (isRetryMode) {
+            showPopup('error', 'Retry Active', 'Close retry popup before resetting.');
+            return;
+        }
+        currentBalance = 0;
+        updateBalanceUI();
+        depositInput.value = "";
+        withdrawInput.value = "";
+        showPopup('success', 'Bank Reset', 'Full reset completed. Balance set to $0. Use deposit to add funds.');
+        isRetryMode = false;
+    }
+    
+    function setInlineMsg(msg, isError) {
+        const inlineDiv = document.querySelector('.inline-message');
+        if (inlineDiv) {
+            inlineDiv.style.background = isError ? '#ffe6e3' : '#e0f2e9';
+            inlineDiv.innerHTML = msg;
+            setTimeout(() => {
+                if (inlineDiv) inlineDiv.style.background = '#f7f9fa';
+            }, 1500);
+        }
+    }
+    
+    window.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            if (popupOverlay.classList.contains('active')) {
+                const retryInput = document.getElementById('retryAmountInput');
+                if (retryInput && document.activeElement === retryInput) {
+                    return; 
+                }
+                event.preventDefault();
+                event.stopPropagation();
+                
+                const retrySubmit = document.getElementById('retrySubmitBtn');
+                if (retrySubmit) {
+                    retrySubmit.click();
+                } else {
+                    closePopup();
+                }
+            }
+        }
+    }, true);
+
+    withdrawInput.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+            if (popupOverlay.classList.contains('active')) return;
+            event.preventDefault();
+            if (isRetryMode) {
+                showPopup('error', 'Retry Active', 'Complete the ongoing retry popup first.');
+                return;
+            }
+            attemptWithdrawFromInput();
+        }
+    });
+    
+    depositInput.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+            if (popupOverlay.classList.contains('active')) return;
+            event.preventDefault();
+            handleDeposit();
+        }
+    });
+    
+    depositBtn.addEventListener('click', handleDeposit);
+    withdrawBtn.addEventListener('click', () => {
+        if (isRetryMode) {
+            showPopup('error', 'Retry Active', 'Please finish the retry popup before clicking withdraw.');
+            return;
+        }
+        attemptWithdrawFromInput();
+    });
+    fullResetBtn.addEventListener('click', fullReset);
+    
+    currentBalance = 0;
+    updateBalanceUI();
+    depositInput.value = "";
+    withdrawInput.value = "";
+</script>
+
+</body></html>
